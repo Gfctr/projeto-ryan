@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contábil Day - Calculadora</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700;800&family=Barlow+Condensed:wght@700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="./assets/css/style.css">
+    <link rel="shortcut icon" href="./assets/icons/favicon.ico" type="image/x-icon">
+</head>
+
+<body>
+    <!-- ========== TELA 1 ========== -->
+    <div class="screen active" id="tela1">
+        <div class="card">
+
+            <div class="logo-wrap">
+                <div class="logo-contabil">
+                    <!-- C<span class="logo-coin">$</span>NTÁBIL -->
+                    CONTÁBIL
+                </div>
+                <span class="logo-day">DAY</span>
+                <span class="logo-subtitulo">CALCULADORA</span>
+            </div>
+
+            <label class="campo-label">Salário Bruto</label>
+            <input class="input-grande" type="text" id="salario" placeholder="R$ 0,00" oninput="formatarInput(this)" />
+
+            <label class="campo-label">Pensão Alimentícia (Opcional)</label>
+            <input class="input-grande" type="text" id="pensao" placeholder="R$ 0,00" oninput="formatarInput(this)" />
+
+            <div class="dep-grupo">
+                <label class="campo-label">Dependentes (IRRF)</label>
+                <div class="dep-opcoes" id="dep-irrf">
+                    <!-- gerado por JS -->
+                </div>
+            </div>
+
+            <div class="dep-grupo">
+                <label class="campo-label">Dependentes até 14 anos (SF)</label>
+                <div class="dep-opcoes" id="dep-sf">
+                    <!-- gerado por JS -->
+                </div>
+            </div>
+
+            <button class="btn-resultado" onclick="calcularEIrParaTela2()">RESULTADO</button>
+        </div>
+    </div>
+
+    <!-- ========== TELA 2 ========== -->
+    <div class="screen" id="tela2">
+        <div class="tela2-card">
+
+            <div class="logo-wrap-2">
+                <div class="logo-contabil" style="justify-content:center">
+                    <!-- C<span class="logo-coin">$</span>NTÁBIL -->
+                    CONTÁBIL
+                </div>
+                <span class="logo-day" style="display:block;text-align:center">DAY</span>
+                <span class="logo-subtitulo">CALCULADORA</span>
+            </div>
+
+            <table class="tabela-resultado">
+                <thead>
+                    <tr>
+                        <th>EVENTO</th>
+                        <th>PROVENTOS</th>
+                        <th>DESCONTOS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>SALÁRIO BRUTO</td>
+                        <td class="valor-provento" id="r-salario-bruto">—</td>
+                        <td></td>
+                    </tr>
+                    <tr id="linha-sf" style="display:none">
+                        <td>SALÁRIO-FAMÍLIA</td>
+                        <td class="valor-provento" id="r-sf">—</td>
+                        <td></td>
+                    </tr>
+                    <tr id="linha-pensao" style="display:none">
+                        <td>PENSÃO ALIMENTÍCIA</td>
+                        <td></td>
+                        <td class="valor-desconto" id="r-pensao">—</td>
+                    </tr>
+                    <tr>
+                        <td>INSS</td>
+                        <td></td>
+                        <td class="valor-desconto" id="r-inss">—</td>
+                    </tr>
+                    <tr>
+                        <td>IRRF</td>
+                        <td></td>
+                        <td class="valor-desconto" id="r-irrf">—</td>
+                    </tr>
+                    <tr class="linha-total">
+                        <td>TOTAIS</td>
+                        <td class="valor-provento" id="r-total-prov">—</td>
+                        <td class="valor-desconto" id="r-total-desc">—</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="banner-liquido">
+                <span class="label">Salário Líquido</span>
+                <span class="valor" id="r-liquido">R$ 0,00</span>
+            </div>
+
+            <div class="banner-fgts">
+                <p id="r-fgts">FGTS (DEPÓSITO AO EMPREGADOR): R$ 0,00</p>
+            </div>
+
+            <button class="btn-voltar" onclick="voltarTela1()">← VOLTAR</button>
+        </div>
+    </div>
+
+    <div id="footer">
+        2026 - <a href="http://www.unitins.br">Unitins</a> - Câmpus Paraíso
+        <br> Supervisão de Tecnologia da Informação
+        <!-- <a href="https://www.linkedin.com/in/gfctrios/">Gabriel Rios</a> -->
+    </div>
+
+    <script>
+        // ===== DEPENDENTES =====
+        let depIRRF = 0;
+        let depSF = 0;
+
+        function criarSeletor(containerId, varName) {
+            const container = document.getElementById(containerId);
+            for (let i = 0; i <= 5; i++) {
+                const item = document.createElement('div');
+                item.className = 'dep-item';
+                item.innerHTML = `
+                    <span>${i}</span>
+                    <div class="dep-check ${i === 0 ? 'selecionado' : ''}" id="${containerId}-${i}">
+                        <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
+                            <path d="M1 7L6.5 12.5L17 1.5" stroke="#071e10" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                `;
+                item.onclick = () => selecionarDep(containerId, varName, i);
+                container.appendChild(item);
+            }
+        }
+
+        function selecionarDep(containerId, varName, valor) {
+            for (let i = 0; i <= 5; i++) {
+                const el = document.getElementById(`${containerId}-${i}`);
+                el.classList.toggle('selecionado', i === valor);
+            }
+            if (varName === 'irrf') depIRRF = valor;
+            else depSF = valor;
+        }
+
+        criarSeletor('dep-irrf', 'irrf');
+        criarSeletor('dep-sf', 'sf');
+
+        // ===== FORMATAÇÃO =====
+        function formatarInput(input) {
+            let v = input.value.replace(/\D/g, '');
+            v = (parseInt(v || '0') / 100).toFixed(2);
+            v = 'R$ ' + v.replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            input.value = v;
+        }
+
+        function limpar(valor) {
+            return parseFloat(valor.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+        }
+
+        function fmt(valor) {
+            return 'R$ ' + valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // ===== CÁLCULOS =====
+        function calcularINSS(salario) {
+            if (salario <= 1412.00) return salario * 0.075;
+            if (salario <= 2666.68) return (1412 * 0.075) + (salario - 1412) * 0.09;
+            if (salario <= 4000.03) return (1412 * 0.075) + (1254.68 * 0.09) + (salario - 2666.68) * 0.12;
+            return (1412 * 0.075) + (1254.68 * 0.09) + (1333.35 * 0.12) + (salario - 4000.03) * 0.14;
+        }
+
+        function calcularIRRF(baseCalculo, dependentes) {
+            // Dedução por dependente: R$ 189,59
+            const deducaoDep = dependentes * 189.59;
+            const base = baseCalculo - deducaoDep;
+
+            if (base <= 2259.20) return 0;
+            if (base <= 2826.65) return base * 0.075 - 169.44;
+            if (base <= 3751.05) return base * 0.15 - 381.44;
+            if (base <= 4664.68) return base * 0.225 - 662.77;
+            return base * 0.275 - 896.00;
+        }
+
+        // Salário-família 2024: até R$ 1.819,26 → R$ 62,04 por dependente
+        function calcularSalarioFamilia(salario, depSF) {
+            if (salario <= 1819.26 && depSF > 0) return depSF * 62.04;
+            return 0;
+        }
+
+        function calcularEIrParaTela2() {
+            const salario = limpar(document.getElementById('salario').value);
+            const pensao = limpar(document.getElementById('pensao').value);
+
+            if (salario <= 0) {
+                alert('Informe o salário bruto.');
+                return;
+            }
+
+            const inss = calcularINSS(salario);
+            const sf = calcularSalarioFamilia(salario, depSF);
+            const baseIRRF = salario - inss;
+            const irrf = Math.max(0, calcularIRRF(baseIRRF, depIRRF));
+            const fgts = salario * 0.08;
+            const totalProventos = salario + sf;
+            const totalDescontos = inss + irrf + pensao;
+            const liquido = totalProventos - totalDescontos;
+
+            // Preencher tabela
+            document.getElementById('r-salario-bruto').textContent = fmt(salario);
+            document.getElementById('r-inss').textContent = fmt(inss);
+            document.getElementById('r-irrf').textContent = fmt(irrf);
+            document.getElementById('r-total-prov').textContent = fmt(totalProventos);
+            document.getElementById('r-total-desc').textContent = fmt(totalDescontos);
+            document.getElementById('r-liquido').textContent = fmt(liquido);
+            document.getElementById('r-fgts').textContent = `FGTS (DEPÓSITO AO EMPREGADOR): ${fmt(fgts)}`;
+
+            // Salário-família
+            const linhaSF = document.getElementById('linha-sf');
+            if (sf > 0) {
+                linhaSF.style.display = '';
+                document.getElementById('r-sf').textContent = fmt(sf);
+            } else {
+                linhaSF.style.display = 'none';
+            }
+
+            // Pensão
+            const linhaPensao = document.getElementById('linha-pensao');
+            if (pensao > 0) {
+                linhaPensao.style.display = '';
+                document.getElementById('r-pensao').textContent = fmt(pensao);
+            } else {
+                linhaPensao.style.display = 'none';
+            }
+
+            // Trocar telas
+            document.getElementById('tela1').classList.remove('active');
+            document.getElementById('tela2').classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        function voltarTela1() {
+            document.getElementById('tela2').classList.remove('active');
+            document.getElementById('tela1').classList.add('active');
+            window.scrollTo(0, 0);
+        }
+    </script>
+
+</body>
+
+</html>
