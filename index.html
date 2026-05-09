@@ -177,22 +177,23 @@
 
         // ===== CÁLCULOS =====
         function calcularINSS(salario) {
-            if (salario <= 1412.00) return salario * 0.075;
-            if (salario <= 2666.68) return (1412 * 0.075) + (salario - 1412) * 0.09;
-            if (salario <= 4000.03) return (1412 * 0.075) + (1254.68 * 0.09) + (salario - 2666.68) * 0.12;
-            return (1412 * 0.075) + (1254.68 * 0.09) + (1333.35 * 0.12) + (salario - 4000.03) * 0.14;
+            if (salario <= 1621.00) return salario * 0.075;
+            if (salario <= 2902.84) return salario * 0.09 - 24.32;
+            if (salario <= 4354.27) return salario * 0.12 - 111.40;
+            if (salario <= 8475.55) return salario * 0.14 - 198.49;
+            return 8475.55 * 0.14 - 198.49;
         }
 
-        function calcularIRRF(baseCalculo, dependentes) {
-            // Dedução por dependente: R$ 189,59
+        function calcularIRRF(salario, inss, dependentes) {
+            // Base = salário bruto - INSS - dedução por dependente
             const deducaoDep = dependentes * 189.59;
-            const base = baseCalculo - deducaoDep;
+            const base = salario - inss - deducaoDep;
 
-            if (base <= 2259.20) return 0;
-            if (base <= 2826.65) return base * 0.075 - 169.44;
-            if (base <= 3751.05) return base * 0.15 - 381.44;
-            if (base <= 4664.68) return base * 0.225 - 662.77;
-            return base * 0.275 - 896.00;
+            if (base <= 5000) return 0;
+            if (base <= 2826.65) return Math.round((base * 0.075 - 169.44) * 100) / 100;
+            if (base <= 3751.05) return Math.round((base * 0.15 - 381.44) * 100) / 100;
+            if (base <= 4664.68) return Math.round((base * 0.225 - 662.77) * 100) / 100;
+            return Math.round((base * 0.275 - 908.73) * 100) / 100;
         }
 
         // Salário-família 2024: até R$ 1.819,26 → R$ 62,04 por dependente
@@ -212,8 +213,7 @@
 
             const inss = calcularINSS(salario);
             const sf = calcularSalarioFamilia(salario, depSF);
-            const baseIRRF = salario - inss;
-            const irrf = Math.max(0, calcularIRRF(baseIRRF, depIRRF));
+            const irrf = Math.max(0, calcularIRRF(salario, inss, depIRRF));
             const fgts = salario * 0.08;
             const totalProventos = salario + sf;
             const totalDescontos = inss + irrf + pensao;
@@ -226,7 +226,7 @@
             document.getElementById('r-total-prov').textContent = fmt(totalProventos);
             document.getElementById('r-total-desc').textContent = fmt(totalDescontos);
             document.getElementById('r-liquido').textContent = fmt(liquido);
-            document.getElementById('r-fgts').textContent = `FGTS (DEPÓSITO AO EMPREGADOR): ${fmt(fgts)}`;
+            document.getElementById('r-fgts').textContent = `FGTS (DEPÓSITO AO EMPREGADOR) ${fmt(fgts)}`;
 
             // Salário-família
             const linhaSF = document.getElementById('linha-sf');
